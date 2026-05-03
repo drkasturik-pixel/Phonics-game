@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phonics Game</title>
+
+<style>
+body{
+  margin:0;
+  font-family:"Comic Sans MS", Arial;
+  background:linear-gradient(135deg,#ffb6c1,#a0e7e5);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.game{
+  background:white;
+  padding:20px;
+  border-radius:20px;
+  width:90%;
+  max-width:900px;
+  text-align:center;
+}
+
+h1{font-size:36px}
+#letter{font-size:60px;margin:10px}
+
+.objects{
+  display:flex;
+  justify-content:space-around;
+  margin:20px;
+}
+
+.objects img{
+  width:110px;
+  cursor:pointer;
+}
+
+.correct{border:5px solid green}
+.wrong{border:5px solid red}
+
+.mark{
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:120px;
+  display:none;
+}
+.show{display:block}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+<h1>Say the Sound</h1>
+<div id="letter"></div>
+<div id="instruction"></div>
+
+<div class="objects" id="objects"></div>
+
+<div id="score">Score: 0</div>
+</div>
+
+<div id="tick" class="mark">👏</div>
+<div id="cross" class="mark">❌</div>
+
+<script>
+
+const questions = [
+
+{
+letter:"a", sound:"a",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/415/415682.png", // apple
+"https://cdn-icons-png.flaticon.com/512/1046/1046784.png", // axe
+"https://cdn-icons-png.flaticon.com/512/616/616408.png", // ant
+"https://cdn-icons-png.flaticon.com/512/616/616430.png"  // cat ❌
+],
+correctIndex:3
+},
+
+{
+letter:"b", sound:"b",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/861/861512.png", // ball
+"https://cdn-icons-png.flaticon.com/512/616/616490.png", // bird
+"https://cdn-icons-png.flaticon.com/512/1046/1046786.png", // banana
+"https://cdn-icons-png.flaticon.com/512/616/616408.png"  // ant ❌
+],
+correctIndex:3
+},
+
+{
+letter:"c", sound:"c",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/616/616430.png", // cat
+"https://cdn-icons-png.flaticon.com/512/415/415733.png", // carrot
+"https://cdn-icons-png.flaticon.com/512/743/743922.png", // car
+"https://cdn-icons-png.flaticon.com/512/861/861525.png"  // ball ❌
+],
+correctIndex:3
+},
+
+{
+letter:"d", sound:"d",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/616/616408.png", // dog
+"https://cdn-icons-png.flaticon.com/512/1046/1046787.png", // donut
+"https://cdn-icons-png.flaticon.com/512/743/743131.png", // drum
+"https://cdn-icons-png.flaticon.com/512/415/415682.png"  // apple ❌
+],
+correctIndex:3
+},
+
+{
+letter:"e", sound:"e",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/1046/1046784.png", // egg
+"https://cdn-icons-png.flaticon.com/512/616/616430.png", // elephant
+"https://cdn-icons-png.flaticon.com/512/3082/3082031.png", // envelope
+"https://cdn-icons-png.flaticon.com/512/861/861512.png"  // ball ❌
+],
+correctIndex:3
+},
+
+{
+letter:"f", sound:"f",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/616/616554.png", // fish
+"https://cdn-icons-png.flaticon.com/512/415/415733.png", // fruit
+"https://cdn-icons-png.flaticon.com/512/1046/1046786.png", // fork
+"https://cdn-icons-png.flaticon.com/512/743/743922.png"  // car ❌
+],
+correctIndex:3
+},
+
+{
+letter:"g", sound:"g",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/1046/1046784.png", // grapes
+"https://cdn-icons-png.flaticon.com/512/616/616430.png", // goat
+"https://cdn-icons-png.flaticon.com/512/861/861525.png", // gift
+"https://cdn-icons-png.flaticon.com/512/616/616408.png"  // dog ❌
+],
+correctIndex:3
+},
+
+{
+letter:"h", sound:"h",
+imgs:[
+"https://cdn-icons-png.flaticon.com/512/616/616430.png", // hen
+"https://cdn-icons-png.flaticon.com/512/1046/1046787.png", // hat
+"https://cdn-icons-png.flaticon.com/512/861/861512.png", // house
+"https://cdn-icons-png.flaticon.com/512/415/415682.png"  // apple ❌
+],
+correctIndex:3
+}
+
+];
+
+let current=0,score=0;
+
+/* VOICE */
+function speak(text){
+  let msg=new SpeechSynthesisUtterance(text);
+  msg.rate=0.8;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(msg);
+}
+
+/* MUSIC */
+let ctx=new(window.AudioContext||window.webkitAudioContext)();
+setInterval(()=>tone(400,.15),1000);
+
+function tone(f,d){
+  let o=ctx.createOscillator();
+  let g=ctx.createGain();
+  o.frequency.value=f;
+  o.connect(g);
+  g.connect(ctx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d);
+}
+
+/* LOAD */
+function loadQ(){
+  const q=questions[current];
+
+  document.getElementById("letter").innerText=q.letter;
+
+  let text="Say "+q.sound+". Tap the picture that does not start with "+q.sound;
+  document.getElementById("instruction").innerText=text;
+
+  speak(text);
+
+  const div=document.getElementById("objects");
+  div.innerHTML="";
+
+  q.imgs.forEach((img,i)=>{
+    const el=document.createElement("img");
+    el.src=img;
+    el.onclick=()=>check(i,el);
+    div.appendChild(el);
+  });
+}
+
+function check(i,el){
+  if(i===questions[current].correctIndex){
+    el.classList.add("correct");
+    score++;
+    show("tick");
+    speak("Great job");
+    next();
+  }else{
+    el.classList.add("wrong");
+    show("cross");
+    speak("Try again");
+  }
+  document.getElementById("score").innerText="Score: "+score;
+}
+
+function next(){
+  setTimeout(()=>{
+    current++;
+    if(current>=questions.length){
+      alert("Well done! Score: "+score);
+      location.reload();
+    }else loadQ();
+  },1200);
+}
+
+function show(id){
+  let el=document.getElementById(id);
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),800);
+}
+
+loadQ();
+
+</script>
+
+</body>
+</html>
